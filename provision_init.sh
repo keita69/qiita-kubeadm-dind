@@ -43,8 +43,11 @@ EOF
 #sudo yum list kubectl --showduplicates | sort -r
 #sudo yum install -y kubectl
 sudo yum install -y kubectl-1.10.7-0
+sudo yum install -y epel-release
+sudo yum install -y jq
 
 # INSTALL KUBEADM-DIND 
+sudo yum -y install wget
 wget https://cdn.rawgit.com/Mirantis/kubeadm-dind-cluster/master/fixed/dind-cluster-v1.10.sh
 chmod +x dind-cluster-v1.10.sh
 
