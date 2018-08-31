@@ -1,17 +1,31 @@
 #!/bin/bash
 
-### proxy setting
-#USER=user
-#PW=password
-#SV=hoge.com
-#PORT=8080
-#echo "proxy=http://${USER}:${PW}@${SV}:${PORT}" > ~/.curlrc
+# 'BEHIND_PROXY' is set to true if the environment is behind a proxy.
+BEHIND_PROXY=false
 
-#sudo tee -a /etc/yum.conf << EOS
-#proxy = http://${SV}:${PORT}
-#proxy_username = ${USER}
-#proxy_password = ${PW}
-#EOS
+if [ ${BEHIND_PROXY} ]; then
+  # mod your proxy info
+  USER=XXXXXXXX
+  PW=XXXXXXXX
+  SV=XXXXXXXX.com
+  PORT=8080
+
+  # curl
+  echo "proxy=http://${USER}:${PW}@${SV}:${PORT}" > ~/.curlrc
+  # yum
+  sudo tee -a /etc/yum.conf << EOS
+proxy = http://${SV}:${PORT}
+proxy_username = ${USER}
+proxy_password = ${PW}
+EOS
+  # wget
+  sudo tee -a /etc/wgetrc << EOS
+http_proxy= http://${USER}:${PW}@${SV}:${PORT}/
+https_proxy= http://${USER}:${PW}@${SV}:${PORT}/
+ftp_proxy = http://${USER}:${PW}@${SV}:${PORT}/
+EOS
+
+fi
 
 # SET UP THE REPOSITORY
 sudo yum install -y yum-utils \
@@ -26,6 +40,14 @@ sudo yum-config-manager \
 #sudo yum list docker-ce --showduplicates | sort -r
 #sudo yum install docker-ce
 sudo yum install -y docker-ce-18.06.1.ce-3.el7
+
+#proxy
+if [ ${BEHIND_PROXY} ]; then
+  # docker
+  sudo cp /usr/lib/systemd/system/docker.service /etc/systemd/system/
+  sudo sed -i -e "/^ExecStart/a Environment=\"HTTP_PROXY=http://${USER}:${PW}@${SV}:${PORT}\"" /etc/systemd/system/docker.service
+fi
+
 sudo systemctl start docker
 # sudo docker run hello-world
 
@@ -48,6 +70,15 @@ sudo yum install -y jq
 
 # INSTALL KUBEADM-DIND 
 sudo yum -y install wget
-wget https://cdn.rawgit.com/Mirantis/kubeadm-dind-cluster/master/fixed/dind-cluster-v1.10.sh
-chmod +x dind-cluster-v1.10.sh
+sudo wget https://cdn.rawgit.com/Mirantis/kubeadm-dind-cluster/master/fixed/dind-cluster-v1.10.sh
+sudo chmod +x dind-cluster-v1.10.sh
+sudo ./dind-cluster-v1.10.sh up
+
+# add kubectl directory to PATH
+export PATH="$HOME/.kubeadm-dind-cluster:$PATH"
+
+echo "######################################"
+echo "   FINISH TO INSTALL KUBEADM-DIND !!  "
+echo "######################################"
+
 
